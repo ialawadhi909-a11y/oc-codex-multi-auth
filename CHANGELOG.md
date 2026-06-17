@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - (placeholder for next release)
 
+## [6.3.3] - 2026-06-17
+
+### Fixed
+- A stored OAuth account whose access token is invalidated server-side returns HTTP 401 (`Your authentication token has been invalidated. Please try signing in again.`), but the request pipeline had no 401 handler, so persisted family routing kept pinning every request to the dead account slot. A request-path 401 is now treated as an account-health failure: the consumed token is refunded, the auth-failure counter is incremented, the refresh-token group is cooled down (or removed past `MAX_AUTH_FAILURES_BEFORE_REMOVAL`), and the request rotates to the next healthy account. The counter is cleared on a successful request so a recovered account does not accumulate stale failures. (#172, fixes #171)
+- `codex-health`/`codex-doctor` now flag `token-invalid` on an invalidated-token error (including a generic `401 Unauthorized` body), so `codex-doctor --fix` repairs the active routing without manual `activeIndex` JSON edits. (#172)
+
 ## [6.3.2] - 2026-06-10
 
 ### Fixed
