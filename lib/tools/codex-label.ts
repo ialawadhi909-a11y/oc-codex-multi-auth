@@ -131,9 +131,9 @@ export function createCodexLabelTool(ctx: ToolContext): ToolDefinition {
 				async (current, persist) => {
 					const storage = current;
 					const accounts = storage?.accounts ?? [];
-					const targetIndex = Math.floor((resolvedIndex ?? 0) - 1);
+					const targetIndex = (resolvedIndex ?? 0) - 1;
 					if (
-						!Number.isFinite(targetIndex) ||
+						!Number.isInteger(targetIndex) ||
 						targetIndex < 0 ||
 						targetIndex >= accounts.length
 					) {
@@ -194,18 +194,23 @@ export function createCodexLabelTool(ctx: ToolContext): ToolDefinition {
 			}
 
 			if (outcome.kind === "save-failed") {
+				// The transaction only mutated its in-memory snapshot; the
+				// persist() call that would have made the label change durable
+				// threw, so the label was never actually updated. Wording must
+				// not imply it was (matches the codex-switch/-remove fix for
+				// the same pattern).
 				if (ui.v2Enabled) {
 					return [
 						...formatUiHeader(ui, "Set account label"),
 						"",
 						formatUiItem(
 							ui,
-							"Label updated in memory but failed to persist.",
+							`Failed to set label for account ${resolvedIndex}: account storage could not be updated.`,
 							"danger",
 						),
 					].join("\n");
 				}
-				return "Label updated in memory but failed to persist. Changes may be lost on restart.";
+				return `Failed to set label for account ${resolvedIndex}: account storage could not be updated.`;
 			}
 
 			if (cachedAccountManagerRef.current) {

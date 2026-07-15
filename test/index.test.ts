@@ -2781,7 +2781,8 @@ describe("OpenAIOAuthPlugin edge cases", () => {
 		const plugin = await OpenAIOAuthPlugin({ client: mockClient } as never) as unknown as PluginType;
 
 		const result = await plugin.tool["codex-switch"].execute({ index: 1 });
-		expect(result).toContain("failed to persist");
+		expect(result).toContain("Failed to switch to");
+		expect(result).toContain("account storage could not be updated");
 	});
 
 	it("handles export errors", async () => {
@@ -2897,7 +2898,8 @@ describe("OpenAIOAuthPlugin edge cases", () => {
 		const plugin = await OpenAIOAuthPlugin({ client: mockClient } as never) as unknown as PluginType;
 
 		const result = await plugin.tool["codex-remove"].execute({ index: 1, confirm: true });
-		expect(result).toContain("failed to persist");
+		expect(result).toContain("Failed to remove");
+		expect(result).toContain("account storage could not be updated");
 	});
 
 	it("adjusts activeIndex when removing account before it", async () => {

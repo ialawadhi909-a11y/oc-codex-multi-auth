@@ -143,7 +143,7 @@ describe("codex-refresh tool concurrency (lost-update regression)", () => {
 
 		let persisted: AccountStorageV3 | undefined;
 		vi.mocked(withAccountStorageTransaction).mockImplementation(
-			async (handler: any) => {
+			async (handler) => {
 				return handler(concurrentStorage, async (s: AccountStorageV3) => {
 					persisted = s;
 				});
@@ -169,5 +169,70 @@ describe("codex-refresh tool concurrency (lost-update regression)", () => {
 		});
 		expect(persistedAccount.coolingDownUntil).toBe(1_700_000_100_000);
 		expect(persistedAccount.cooldownReason).toBe("rate-limit");
+
+		// The refresh rotated the token (mocked queuedRefresh returns
+		// "new-refresh" for the "old-refresh" input), so the persisted
+		// account must carry a tokenRotatedAt stamp. Without it, the
+		// credential-clobber guard in lib/accounts/persistence.ts (which
+		// compares `tokenRotatedAt ?? 0`) cannot tell this rotation apart
+		// from a stale snapshot and could let the fresh token be clobbered.
+		expect(persistedAccount.tokenRotatedAt).toBeGreaterThan(0);
+	});
+
+	it("skips applying a refresh outcome when the on-disk refreshToken changed mid-flight (another process rotated it)", async () => {
+		const initialStorage: AccountStorageV3 = {
+			version: 3,
+			activeIndex: 0,
+			accounts: [
+				{
+					email: "user@example.com",
+					accountId: "acct-1",
+					refreshToken: "old-refresh",
+					addedAt: 1,
+					lastUsed: 1,
+				},
+			],
+		};
+		vi.mocked(loadAccounts).mockResolvedValue(initialStorage);
+
+		// Simulate another process rotating this account's refresh token
+		// (e.g. a concurrent request-time refresh) while our queuedRefresh
+		// call for "old-refresh" was still in flight. By the time the
+		// transaction re-reads storage, the account's refreshToken no
+		// longer matches the pre-refresh identity our outcome was keyed on.
+		const concurrentStorage: AccountStorageV3 = {
+			version: 3,
+			activeIndex: 0,
+			accounts: [
+				{
+					email: "user@example.com",
+					accountId: "acct-1",
+					refreshToken: "externally-rotated-refresh",
+					addedAt: 1,
+					lastUsed: 1,
+					tokenRotatedAt: 999,
+				},
+			],
+		};
+
+		let persisted: AccountStorageV3 | undefined;
+		vi.mocked(withAccountStorageTransaction).mockImplementation(
+			async (handler) => {
+				return handler(concurrentStorage, async (s: AccountStorageV3) => {
+					persisted = s;
+				});
+			},
+		);
+
+		const tool = createCodexRefreshTool(buildCtx(false));
+		await tool.execute({}, {} as never);
+
+		expect(persisted).toBeDefined();
+		const persistedAccount = persisted!.accounts[0]!;
+
+		// The stale outcome (keyed on "old-refresh") must NOT overwrite the
+		// externally-rotated token -- we cannot know which chain is live.
+		expect(persistedAccount.refreshToken).toBe("externally-rotated-refresh");
+		expect(persistedAccount.tokenRotatedAt).toBe(999);
 	});
 });

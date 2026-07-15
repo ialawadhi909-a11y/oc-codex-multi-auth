@@ -287,12 +287,25 @@ export function createCodexKeychainTool(ctx: ToolContext): ToolDefinition {
 			// current file is archived (with explicit confirm=true) or refused
 			// rather than deleted outright before the backup takes its place.
 			const rollbackResult = await withStorageLock(async () => {
+				const warnings: string[] = [];
 				let currentExists = false;
 				try {
 					await fs.access(storagePath);
 					currentExists = true;
-				} catch {
-					/* canonical path is clear; safe to rename */
+				} catch (err) {
+					const code = (err as NodeJS.ErrnoException).code;
+					if (code !== "ENOENT") {
+						// Only ENOENT means "nothing at this path". Any other
+						// failure (EACCES, a transient FS error, ...) means we
+						// genuinely don't know whether a current file exists, so
+						// proceeding past the confirm guard could silently
+						// clobber live credentials. Abort instead of guessing.
+						return {
+							ok: false as const,
+							message: `codex-keychain rollback: failed to check for an existing accounts file at ${storagePath}: ${(err as Error).message}. Aborted.`,
+						};
+					}
+					/* ENOENT: canonical path is clear; safe to rename */
 				}
 				let preRollbackArchive: string | null = null;
 				if (currentExists) {
@@ -320,40 +333,75 @@ export function createCodexKeychainTool(ctx: ToolContext): ToolDefinition {
 					}
 				}
 
+				// Apply 0o600 to the BACKUP file BEFORE promoting it, so the
+				// active file can never briefly (or permanently, if the
+				// process dies between rename and chmod) end up group/world
+				// readable. rename() preserves the source file's mode, so
+				// chmodding the backup here has the same effect on the
+				// eventual `storagePath` as chmodding it after the rename
+				// would have -- without the intermediate window. Windows
+				// ignores POSIX mode bits, so skip there. A chmod failure is
+				// a hardening nicety, not a reason to abort a recovery tool
+				// on a permission-quirky mount -- but it must not be
+				// silently swallowed either.
+				if (process.platform !== "win32") {
+					try {
+						await fs.chmod(mostRecent, 0o600);
+					} catch (err) {
+						warnings.push(
+							`codex-keychain rollback: could not set restrictive permissions on the backup before restoring it (${(err as Error).message}). The restored file's permissions were not hardened; verify them manually.`,
+						);
+					}
+				}
+
 				try {
 					await fs.rename(mostRecent, storagePath);
 				} catch (err) {
+					const renameError = (err as Error).message;
+					if (preRollbackArchive) {
+						// The current file was already archived; try to put it
+						// back so this failure doesn't leave the canonical path
+						// empty.
+						try {
+							await fs.rename(preRollbackArchive, storagePath);
+							return {
+								ok: false as const,
+								message: `codex-keychain rollback: failed to promote backup ${mostRecent} -> ${storagePath}: ${renameError}. Recovered by restoring the previously archived file from ${preRollbackArchive}.`,
+							};
+						} catch (recoveryErr) {
+							return {
+								ok: false as const,
+								message: `codex-keychain rollback: failed to promote backup ${mostRecent} -> ${storagePath}: ${renameError}. Recovery also failed: could not restore the archived file from ${preRollbackArchive} back to ${storagePath}: ${(recoveryErr as Error).message}. Manual intervention required -- check both ${preRollbackArchive} and ${mostRecent}.`,
+							};
+						}
+					}
 					return {
 						ok: false as const,
-						message: `codex-keychain rollback: failed to rename ${mostRecent} -> ${storagePath}: ${(err as Error).message}`,
+						message: `codex-keychain rollback: failed to rename ${mostRecent} -> ${storagePath}: ${renameError}`,
 					};
-				}
-				// Re-apply 0o600 after rollback rename (F1 post-merge LOW
-				// finding). Mirror the chmod applied on the backup-write path
-				// so a restored file can never end up group/world-readable even
-				// if the backup's mode drifted between migration and rollback.
-				// Windows ignores POSIX mode bits, so skip there.
-				if (process.platform !== "win32") {
-					try {
-						await fs.chmod(storagePath, 0o600);
-					} catch {
-						/* non-fatal: file is restored, mode drift is a hardening
-						 * nicety. Swallow to avoid failing the rollback on a
-						 * permission-sensitive mount. */
-					}
 				}
 				// Best-effort keychain delete now that the backup is active;
 				// rollback means "stop trusting the keychain copy", so this
 				// runs whenever opt-in is (still) on, mirroring clearAccounts'
-				// own opt-in-gated delete.
+				// own opt-in-gated delete. A false/failed delete does not fail
+				// the rollback (the JSON file is already authoritative again),
+				// but the operator needs to know a stale keychain copy might
+				// still be preferred on the next load.
 				if (optIn) {
 					try {
-						await deleteFromKeychain(projectKey);
-					} catch {
-						/* best-effort */
+						const deleted = await deleteFromKeychain(projectKey);
+						if (!deleted) {
+							warnings.push(
+								"codex-keychain rollback: could not confirm the OS-keychain entry was deleted. The keychain copy may still exist and would be preferred over this restored file on the next load -- delete it manually or disable CODEX_KEYCHAIN.",
+							);
+						}
+					} catch (err) {
+						warnings.push(
+							`codex-keychain rollback: failed to delete the OS-keychain entry: ${(err as Error).message}. The keychain copy may still exist and would be preferred over this restored file on the next load -- delete it manually or disable CODEX_KEYCHAIN.`,
+						);
 					}
 				}
-				return { ok: true as const, preRollbackArchive };
+				return { ok: true as const, preRollbackArchive, warnings };
 			});
 
 			if (!rollbackResult.ok) {
@@ -378,6 +426,9 @@ export function createCodexKeychainTool(ctx: ToolContext): ToolDefinition {
 						preRollbackArchive,
 					),
 				);
+			}
+			for (const warning of rollbackResult.warnings) {
+				lines.push(formatUiItem(ui, warning, "warning"));
 			}
 			lines.push(
 				formatUiItem(

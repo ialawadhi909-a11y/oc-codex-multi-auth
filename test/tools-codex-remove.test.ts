@@ -27,7 +27,7 @@ function stubTransaction(current: AccountStorageV3 | null): {
 } {
 	let persisted: AccountStorageV3 | undefined;
 	vi.mocked(withAccountStorageTransaction).mockImplementation(
-		async (handler: any) => {
+		async (handler) => {
 			return handler(current, async (s: AccountStorageV3) => {
 				persisted = s;
 			});
@@ -183,5 +183,38 @@ describe("codex-remove tool concurrency (lost-update regression)", () => {
 			"gpt-5": 1_700_000_000_000,
 		});
 		expect(persisted!.accounts[0]!.coolingDownUntil).toBe(1_700_000_100_000);
+	});
+});
+
+describe("codex-remove tool fractional index rejection", () => {
+	beforeEach(() => {
+		vi.mocked(loadAccounts).mockReset();
+		vi.mocked(withAccountStorageTransaction).mockReset();
+	});
+
+	it("rejects a fractional index instead of silently flooring it onto a neighboring account", async () => {
+		// index=2.9 (1-based) previously floored to targetIndex=1 (0-based),
+		// i.e. account 2 -- a destructive silent misfire on a mistyped index.
+		const storage: AccountStorageV3 = {
+			version: 3,
+			activeIndex: 0,
+			accounts: [
+				{ email: "a@example.com", refreshToken: "r1", addedAt: 1, lastUsed: 1 },
+				{ email: "b@example.com", refreshToken: "r2", addedAt: 2, lastUsed: 2 },
+			],
+		};
+		vi.mocked(loadAccounts).mockResolvedValue(storage);
+		const { getPersisted } = stubTransaction(storage);
+
+		const tool = createCodexRemoveTool(buildCtx(false));
+		const output = (await tool.execute(
+			{ index: 2.9, confirm: true },
+			{} as never,
+		)) as string;
+
+		expect(output).toContain("Invalid account number");
+		// Nothing was persisted -- the fractional index must not resolve to
+		// any account.
+		expect(getPersisted()).toBeUndefined();
 	});
 });

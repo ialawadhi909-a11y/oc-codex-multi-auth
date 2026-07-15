@@ -29,6 +29,18 @@ interface RefreshOutcome {
 	refreshToken: string;
 	accessToken: string;
 	expiresAt: number;
+	/**
+	 * Set to the wall-clock time the refresh settled, but ONLY when the
+	 * refresh actually rotated the token (refreshResult.refresh differs from
+	 * the pre-refresh token in `identity.refreshToken`). Left undefined for
+	 * a same-token refresh so the transaction below leaves the account's
+	 * existing `tokenRotatedAt` untouched. Without this stamp, tool-driven
+	 * rotations are invisible to the credential-clobber guard in
+	 * `lib/accounts/persistence.ts`, which compares `tokenRotatedAt ?? 0` --
+	 * a rotation that never stamps a value loses that comparison to any
+	 * stale in-memory snapshot that saves afterward.
+	 */
+	rotatedAt?: number;
 }
 
 /**
@@ -122,11 +134,13 @@ export function createCodexRefreshTool(ctx: ToolContext): ToolDefinition {
 				try {
 					const refreshResult = await queuedRefresh(account.refreshToken);
 					if (refreshResult.type === "success") {
+						const rotated = refreshResult.refresh !== account.refreshToken;
 						refreshedAccounts.push({
 							identity,
 							refreshToken: refreshResult.refresh,
 							accessToken: refreshResult.access,
 							expiresAt: refreshResult.expires,
+							rotatedAt: rotated ? Date.now() : undefined,
 						});
 						results.push(`  ${getStatusMarker(ui, "ok")} ${label}: Refreshed`);
 						refreshedCount++;
@@ -157,9 +171,19 @@ export function createCodexRefreshTool(ctx: ToolContext): ToolDefinition {
 						if (idx < 0) continue; // Account removed concurrently; nothing to apply.
 						const target = current.accounts[idx];
 						if (!target) continue;
+						// The refresh was keyed off `outcome.identity.refreshToken` (the
+						// pre-refresh value). If the on-disk refreshToken no longer
+						// matches it, another process rotated this account mid-flight
+						// while our (network-bound) refresh was in progress -- we
+						// cannot know which resulting chain is the live one, so skip
+						// rather than clobber whatever that other process wrote.
+						if (target.refreshToken !== outcome.identity.refreshToken) continue;
 						target.refreshToken = outcome.refreshToken;
 						target.accessToken = outcome.accessToken;
 						target.expiresAt = outcome.expiresAt;
+						if (outcome.rotatedAt !== undefined) {
+							target.tokenRotatedAt = outcome.rotatedAt;
+						}
 					}
 					await persist(current);
 				});

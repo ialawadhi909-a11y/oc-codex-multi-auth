@@ -136,9 +136,9 @@ export function createCodexRemoveTool(ctx: ToolContext): ToolDefinition {
 				async (current, persist) => {
 					const storage = current;
 					const accounts = storage?.accounts ?? [];
-					const targetIndex = Math.floor((resolvedIndex ?? 0) - 1);
+					const targetIndex = (resolvedIndex ?? 0) - 1;
 					if (
-						!Number.isFinite(targetIndex) ||
+						!Number.isInteger(targetIndex) ||
 						targetIndex < 0 ||
 						targetIndex >= accounts.length
 					) {
@@ -231,24 +231,22 @@ export function createCodexRemoveTool(ctx: ToolContext): ToolDefinition {
 			}
 
 			if (outcome.kind === "save-failed") {
+				// The transaction only mutated its in-memory snapshot; the
+				// persist() call that would have made the removal durable
+				// threw, so the account was never actually removed. Wording
+				// must not imply it was.
 				if (ui.v2Enabled) {
 					return [
 						...formatUiHeader(ui, "Remove account"),
 						"",
 						formatUiItem(
 							ui,
-							`Removed selected entry: ${outcome.label}`,
-							"warning",
-						),
-						formatUiItem(ui, "Only the selected index was changed.", "muted"),
-						formatUiItem(
-							ui,
-							"Failed to persist. Change may be lost on restart.",
+							`Failed to remove ${outcome.label}: account storage could not be updated.`,
 							"danger",
 						),
 					].join("\n");
 				}
-				return `Removed selected entry: ${outcome.label} from memory, but failed to persist. Only the selected index was changed and this may be lost on restart.`;
+				return `Failed to remove ${outcome.label}: account storage could not be updated.`;
 			}
 
 			if (cachedAccountManagerRef.current) {

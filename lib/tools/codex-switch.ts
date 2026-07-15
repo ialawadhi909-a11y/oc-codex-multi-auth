@@ -104,10 +104,10 @@ export function createCodexSwitchTool(ctx: ToolContext): ToolDefinition {
 			const outcome = await withAccountStorageTransaction<SwitchOutcome>(
 				async (current, persist) => {
 					const accounts = current?.accounts ?? [];
-					const targetIndex = Math.floor((resolvedIndex ?? 0) - 1);
+					const targetIndex = (resolvedIndex ?? 0) - 1;
 					if (
 						!current ||
-						!Number.isFinite(targetIndex) ||
+						!Number.isInteger(targetIndex) ||
 						targetIndex < 0 ||
 						targetIndex >= accounts.length
 					) {
@@ -165,19 +165,22 @@ export function createCodexSwitchTool(ctx: ToolContext): ToolDefinition {
 			}
 
 			if (outcome.kind === "save-failed") {
+				// The transaction only mutated its in-memory snapshot; the
+				// persist() call that would have made it durable threw, so
+				// nothing on disk actually changed. Wording must not imply the
+				// switch happened -- it didn't.
 				if (ui.v2Enabled) {
 					return [
 						...formatUiHeader(ui, "Switch account"),
 						"",
-						formatUiItem(ui, `Switched to ${outcome.label}`, "warning"),
 						formatUiItem(
 							ui,
-							"Failed to persist change. It may be lost on restart.",
+							`Failed to switch to ${outcome.label}: account storage could not be updated.`,
 							"danger",
 						),
 					].join("\n");
 				}
-				return `Switched to ${outcome.label} but failed to persist. Changes may be lost on restart.`;
+				return `Failed to switch to ${outcome.label}: account storage could not be updated.`;
 			}
 
 			try {
