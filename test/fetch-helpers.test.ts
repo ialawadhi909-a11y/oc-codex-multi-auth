@@ -590,9 +590,8 @@ describe('Fetch Helpers Module', () => {
 		});
 
 		it('honors the default selector auto-fallback opt-out', () => {
-			const previous = process.env.CODEX_AUTH_DISABLE_CODEX_AUTO_FALLBACK;
 			try {
-				process.env.CODEX_AUTH_DISABLE_CODEX_AUTO_FALLBACK = '1';
+				vi.stubEnv('CODEX_AUTH_DISABLE_CODEX_AUTO_FALLBACK', '1');
 				const codexFallback = resolveUnsupportedCodexFallbackModel({
 					requestedModel: 'gpt-5-codex',
 					errorBody: {
@@ -623,11 +622,7 @@ describe('Fetch Helpers Module', () => {
 				});
 				expect(gpt54Fallback).toBeUndefined();
 			} finally {
-				if (previous === undefined) {
-					delete process.env.CODEX_AUTH_DISABLE_CODEX_AUTO_FALLBACK;
-				} else {
-					process.env.CODEX_AUTH_DISABLE_CODEX_AUTO_FALLBACK = previous;
-				}
+				vi.unstubAllEnvs();
 			}
 		});
 
@@ -700,46 +695,40 @@ describe('Fetch Helpers Module', () => {
 			expect(fallback).toBe('gpt-5.6-terra');
 		});
 
-		it('honors the gpt-5.6 auto-fallback opt-out', () => {
-			const previous = process.env.CODEX_AUTH_DISABLE_GPT56_AUTO_FALLBACK;
+		it('honors the gpt-5.6 auto-fallback opt-out for every 5.6 tier', () => {
+			const unsupportedBody = (model: string) => ({
+				error: {
+					code: 'model_not_supported_with_chatgpt_account',
+					message: `The '${model}' model is not supported when using Codex with a ChatGPT account.`,
+				},
+			});
 			try {
-				process.env.CODEX_AUTH_DISABLE_GPT56_AUTO_FALLBACK = '1';
-				const strictFallback = resolveUnsupportedCodexFallbackModel({
-					requestedModel: 'gpt-5.6-sol',
-					errorBody: {
-						error: {
-							code: 'model_not_supported_with_chatgpt_account',
-							message:
-								"The 'gpt-5.6-sol' model is not supported when using Codex with a ChatGPT account.",
-						},
-					},
-					attemptedModels: ['gpt-5.6-sol'],
-					fallbackOnUnsupportedCodexModel: false,
-					fallbackToGpt52OnUnsupportedGpt53: true,
-				});
-				expect(strictFallback).toBeUndefined();
+				vi.stubEnv('CODEX_AUTH_DISABLE_GPT56_AUTO_FALLBACK', '1');
+
+				// Each tier is its own entry in the opt-out map; the flag must
+				// disable auto-fallback for all three, not just the Sol flagship.
+				for (const tier of ['gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.6-luna']) {
+					const strictFallback = resolveUnsupportedCodexFallbackModel({
+						requestedModel: tier,
+						errorBody: unsupportedBody(tier),
+						attemptedModels: [tier],
+						fallbackOnUnsupportedCodexModel: false,
+						fallbackToGpt52OnUnsupportedGpt53: true,
+					});
+					expect(strictFallback).toBeUndefined();
+				}
 
 				// The explicit fallback policy still applies when opted out.
 				const policyFallback = resolveUnsupportedCodexFallbackModel({
 					requestedModel: 'gpt-5.6-sol',
-					errorBody: {
-						error: {
-							code: 'model_not_supported_with_chatgpt_account',
-							message:
-								"The 'gpt-5.6-sol' model is not supported when using Codex with a ChatGPT account.",
-						},
-					},
+					errorBody: unsupportedBody('gpt-5.6-sol'),
 					attemptedModels: ['gpt-5.6-sol'],
 					fallbackOnUnsupportedCodexModel: true,
 					fallbackToGpt52OnUnsupportedGpt53: true,
 				});
 				expect(policyFallback).toBe('gpt-5.6-terra');
 			} finally {
-				if (previous === undefined) {
-					delete process.env.CODEX_AUTH_DISABLE_GPT56_AUTO_FALLBACK;
-				} else {
-					process.env.CODEX_AUTH_DISABLE_GPT56_AUTO_FALLBACK = previous;
-				}
+				vi.unstubAllEnvs();
 			}
 		});
 
