@@ -144,6 +144,7 @@ vi.mock("../lib/config.js", () => ({
 
 vi.mock("../lib/request/request-transformer.js", () => ({
 	applyFastSessionDefaults: <T>(config: T) => config,
+	clampReasoningForModel: <T>(reasoning: T) => reasoning,
 	upsertBackendModelIdentityMessage: (input: unknown) => input,
 }));
 
