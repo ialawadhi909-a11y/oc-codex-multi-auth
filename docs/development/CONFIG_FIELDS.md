@@ -229,7 +229,7 @@ Defaults come from `lib/config.ts` / `lib/schemas.ts`. Environment overrides win
 | `fallbackOnUnsupportedCodexModel` | `false` | `CODEX_AUTH_FALLBACK_UNSUPPORTED_MODEL` | Legacy fallback toggle |
 | `fallbackToGpt52OnUnsupportedGpt53` | `true` | `CODEX_AUTH_FALLBACK_GPT53_TO_GPT52` | Legacy 5.3→5.2 edge |
 | `unsupportedCodexFallbackChain` | `{}` | (file only) | Per-model fallback chain overrides |
-| `tokenRefreshSkewMs` | `60000` | (via config helpers) | Refresh tokens this many ms before expiry |
+| `tokenRefreshSkewMs` | `60000` | `CODEX_AUTH_TOKEN_REFRESH_SKEW_MS` | Refresh tokens this many ms before expiry |
 | `rateLimitToastDebounceMs` | `60000` | `CODEX_AUTH_RATE_LIMIT_TOAST_DEBOUNCE_MS` | Debounce rate-limit toasts |
 | `toastDurationMs` | `5000` | `CODEX_AUTH_TOAST_DURATION_MS` | Toast visibility duration |
 | `perProjectAccounts` | `true` | `CODEX_AUTH_PER_PROJECT_ACCOUNTS` | Project-scoped account pools |

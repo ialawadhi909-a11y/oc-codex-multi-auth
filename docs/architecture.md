@@ -138,11 +138,14 @@ The storage layer uses V3 account files with migrations from older formats, atom
 ## Design Constraints
 
 - OpenCode remains the host runtime and provider loader.
+- Package exports: `"."` (provider plugin) and `"./tui"` (TUI quota plugin).
 - The canonical package/plugin name is `oc-codex-multi-auth` (legacy npm name `oc-chatgpt-multi-auth` is migration-only).
 - Node engines: `>=18`.
 - OAuth callback port remains `1455`; callback path is `/auth/callback`.
 - ChatGPT-backed Codex requests require `store: false`.
 - Multi-turn continuity depends on `reasoning.encrypted_content` and the host-supplied conversation history.
+- Account pool limits: max **20** accounts; auth-failure cooldown **30s**; auto-removal after **3** consecutive auth failures.
+- Account bootstrap can hydrate from Codex CLI storage under `~/.codex` unless `CODEX_AUTH_SYNC_CODEX_CLI=0`.
 - Credentials and account metadata stay local unless the user exports or migrates them.
 - Diagnostic commands redact sensitive account/token details by default.
 - The optional keychain backend must fall back without deleting JSON credentials silently.

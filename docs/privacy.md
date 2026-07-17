@@ -39,6 +39,10 @@ All plugin state is stored **locally on your machine** unless you export it or o
 
 Contents typically include OAuth access/refresh material, account IDs, labels/tags/notes, rate-limit reset metadata, and rotation state. Per-project pools are enabled by default (`perProjectAccounts: true`).
 
+### Codex CLI hydrate (optional source)
+
+On startup the plugin may also read Codex CLI account material under `~/.codex` (for example `accounts.json`) to help bootstrap the local pool. Disable with `CODEX_AUTH_SYNC_CODEX_CLI=0`. This is local filesystem access only; nothing is uploaded to the package maintainers.
+
 ### Plugin configuration
 
 | Item | Default path |

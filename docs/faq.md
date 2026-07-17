@@ -48,7 +48,7 @@ Default install is compact modern (bases + variants). Use `--full` for modern + 
 
 ## Can I use multiple accounts?
 
-Yes. The plugin supports multiple ChatGPT accounts, health-aware rotation (`rotationStrategy`: `hybrid` default, `sticky`, or `round-robin`), per-project storage (default on), preferred model→account pools (`modelAccountPools` / `codex-pool`), and guided account management commands such as `codex-list`, `codex-switch`, and `codex-warm`.
+Yes. The plugin supports multiple ChatGPT accounts, health-aware rotation (`rotationStrategy`: `hybrid` default, `sticky`, or `round-robin`), per-project storage (default on), preferred model→account pools (`modelAccountPools` / `codex-pool`), and guided account management commands such as `codex-list`, `codex-switch`, and `codex-warm`. Hard limits: at most **20** saved OAuth accounts, a **30s** cooldown after auth failures, and automatic removal after **3** consecutive auth failures on the same account.
 
 ## How do I warm accounts without spending an agent turn?
 

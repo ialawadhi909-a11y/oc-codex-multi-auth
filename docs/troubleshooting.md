@@ -94,7 +94,7 @@ Update your `~/.config/opencode/opencode.json`:
    ```
 3. **Remember: request logs only appear after the first OpenAI request**:
    ```bash
-   ENABLE_PLUGIN_REQUEST_LOGGING=1 opencode run "test" --model=openai/gpt-5.5-medium
+   ENABLE_PLUGIN_REQUEST_LOGGING=1 opencode run "test" --model=openai/gpt-5.5 --variant=medium
    ```
 4. **Check registry access**:
    ```bash
@@ -112,11 +112,11 @@ Update your `~/.config/opencode/opencode.json`:
 <summary><b>Slow first response / startup latency</b></summary>
 
 **What’s normal:**
-- The first request may fetch **Codex instructions** and/or the **OpenCode codex prompt** from GitHub.
-- Current releases use **stale-while-revalidate caching** and a **startup prewarm** to reduce first-turn latency.
+- The first request may fetch **Codex instructions** and/or the **OpenCode codex prompt** from GitHub (catalog + prompt caches under `~/.opencode/cache/`).
+- Default `requestTransformMode` is **`native`**. Startup prewarm of prompt caches only runs when legacy transform is enabled (`CODEX_AUTH_REQUEST_TRANSFORM_MODE=legacy` or config `requestTransformMode: "legacy"`) and is not disabled with `CODEX_AUTH_PREWARM=0`.
 
 **Tuning knobs:**
-1. Disable prewarm (if you prefer zero background fetches at startup):
+1. Disable prewarm when using legacy transform (if you prefer zero background fetches at startup):
    ```bash
    CODEX_AUTH_PREWARM=0 opencode
    ```
@@ -330,7 +330,13 @@ opencode run "test" --model=openai/gpt-5-codex-low  # Must match config key
 
 **Note:** `opencode models openai` currently shows only OpenCode's built-in provider catalog. If you add template-defined or custom models, use `opencode debug config` to confirm they were merged into the effective config.
 
-**GPT-5.5 note:** on tested OpenCode `1.14.22`, bare `openai/gpt-5.5` can still fail with `ProviderModelNotFoundError` even when the base template entry exists. Use explicit shipped IDs like `openai/gpt-5.5-medium` or `openai/gpt-5.5-high` for current live CLI tests.
+**Selector note:** the default compact install exposes base OAuth families. Prefer:
+
+```bash
+opencode run "test" --model=openai/gpt-5.5 --variant=medium
+```
+
+Use explicit IDs such as `openai/gpt-5.5-medium` only after installing with `--full` or `--legacy`. If a host build rejects the bare base entry even when `opencode debug config` shows it, reinstall with `--full` rather than assuming medium IDs exist on a compact install.
 
 </details>
 
@@ -687,7 +693,7 @@ DEBUG_CODEX_PLUGIN=1 ENABLE_PLUGIN_REQUEST_LOGGING=1 CODEX_PLUGIN_LOG_BODIES=1 o
 <summary><b>Inspect Actual API Requests</b></summary>
 
 ```bash
-ENABLE_PLUGIN_REQUEST_LOGGING=1 CODEX_PLUGIN_LOG_BODIES=1 opencode run "test" --model=openai/gpt-5.5-medium
+ENABLE_PLUGIN_REQUEST_LOGGING=1 CODEX_PLUGIN_LOG_BODIES=1 opencode run "test" --model=openai/gpt-5.5 --variant=medium
 
 cat ~/.opencode/logs/codex-plugin/request-*-after-transform.json | jq '{
   model: .body.model,

@@ -16,6 +16,7 @@ lib/tools/
   index.ts                # ToolContext type + createToolRegistry(ctx) barrel
   codex-list.ts           # one file per tool
   codex-switch.ts
+  codex-warm.ts
   codex-status.ts
   codex-limits.ts
   codex-reset.ts

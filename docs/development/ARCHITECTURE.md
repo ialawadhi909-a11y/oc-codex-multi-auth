@@ -280,15 +280,19 @@ Unsupported-model behavior is strict by default. Default auto-fallbacks still co
 
 1. OAuth callback port remains `1455`.
 2. Dist output is generated; source of truth is `index.ts`, `tui.ts`, `lib/`, `scripts/`, `config/`, and `docs/`.
-3. The canonical package and plugin entry is `oc-codex-multi-auth`.
+3. The canonical package and plugin entry is `oc-codex-multi-auth` (exports `"."` and `"./tui"`).
 4. The installer should normalize stale `oc-chatgpt-multi-auth` entries rather than preserve duplicates.
 5. ChatGPT-backed Codex requests use `store: false`.
 6. `reasoning.encrypted_content` must stay available for multi-turn continuity.
 7. Account emails and tokens must not be exposed in diagnostic payloads or response headers.
 8. Keychain failures must not silently delete JSON credentials.
-9. Tool additions require a per-file factory, registry wiring, and focused test/docs updates.
-10. Boolean environment overrides are truthy only for the literal string `"1"`.
-11. Docs, package metadata, GitHub About text, and plugin metadata should lead with OpenCode, ChatGPT OAuth, Codex/GPT-5 routing, multi-account rotation, account switching, health checks, diagnostics, and recovery tools.
+9. Account pool limits stay at `ACCOUNT_LIMITS` (max 20, 30s auth cooldown, remove after 3 consecutive auth failures).
+10. Codex CLI hydrate from `~/.codex` stays on unless `CODEX_AUTH_SYNC_CODEX_CLI=0`.
+11. Startup prewarm runs only for legacy request transform when not disabled via `CODEX_AUTH_PREWARM=0`.
+12. Installer help/post-install strings must match the live catalog (12 modern bases / 53 variants; 53 legacy explicit).
+13. Tool additions require a per-file factory, registry wiring, and focused test/docs updates.
+14. Boolean environment overrides are truthy only for the literal string `"1"`.
+15. Docs, package metadata, GitHub About text, and plugin metadata should lead with OpenCode, ChatGPT OAuth, Codex/GPT-5 routing, multi-account rotation, account switching, health checks, diagnostics, and recovery tools.
 
 ---
 

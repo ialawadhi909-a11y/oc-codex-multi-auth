@@ -281,14 +281,19 @@ by default the plugin is strict (`unsupportedCodexPolicy: "strict"`) except for 
 
 set `unsupportedCodexPolicy: "fallback"` to enable model fallback after account/workspace attempts are exhausted.
 
-defaults when fallback policy is enabled and `unsupportedCodexFallbackChain` is empty:
+defaults when fallback policy is enabled and `unsupportedCodexFallbackChain` is empty (plus the always-on public-selector auto-fallbacks for common entitlement gates):
+- `gpt-5.6-sol -> gpt-5.6-terra -> gpt-5.6-luna -> gpt-5.5` (then the `gpt-5.5` chain)
+- `gpt-5.6-terra -> gpt-5.6-luna -> gpt-5.5`
+- `gpt-5.6-luna -> gpt-5.5`
 - `gpt-5.5 -> gpt-5.4 -> gpt-5.4-mini -> gpt-5.4-nano`
 - `gpt-5-codex -> gpt-5.4 -> gpt-5.4-mini -> gpt-5.4-nano`
-- `gpt-5.4-pro -> gpt-5.4` (if `gpt-5.4-pro` is selected manually)
+- `gpt-5.4-pro -> gpt-5.4` (if `gpt-5.4-pro` is selected manually; not a shipped base)
 - `gpt-5.3-codex -> gpt-5-codex -> gpt-5.2-codex`
 - `gpt-5.3-codex-spark -> gpt-5-codex -> gpt-5.3-codex -> gpt-5.2-codex` (applies if you manually select Spark model IDs)
 - `gpt-5.2-codex -> gpt-5-codex`
 - `gpt-5.1-codex -> gpt-5-codex`
+
+Note: `gpt-5.4` and `gpt-5.4-pro` appear in fallback/runtime normalization but are not shipped as compact modern base picker entries (bases use `gpt-5.4-mini` / `gpt-5.4-nano`).
 
 note: the TUI can continue showing your originally selected model while fallback is applied internally. use request logs to verify the effective upstream model (`request-*-after-transform.json`). set `CODEX_PLUGIN_LOG_BODIES=1` when you need to inspect raw `.body.*` fields.
 
@@ -329,7 +334,11 @@ override any config with env vars (boolean values are truthy only for `"1"`):
 | `CODEX_TUI_GLYPHS=unicode` | override glyph mode (`ascii`, `unicode`, `auto`) |
 | `CODEX_TUI_MASK_EMAIL=1` | mask account emails across account-display surfaces (TUI prompt quota status, command output, interactive account menu, and standalone login menu) |
 | `CODEX_TUI_MASK_EMAIL_DETAILS=1` | also mask the active account email in quota details when prompt masking is enabled |
-| `CODEX_AUTH_PREWARM=0` | disable startup prewarm (prompt/instruction cache warmup) |
+| `CODEX_AUTH_PREWARM=0` | disable startup prewarm when legacy transform is enabled (native mode does not prewarm) |
+| `CODEX_AUTH_TOKEN_REFRESH_SKEW_MS=60000` | refresh OAuth tokens this many ms before expiry |
+| `CODEX_AUTH_RATE_LIMIT_TOAST_DEBOUNCE_MS=60000` | debounce rate-limit toast notifications |
+| `CODEX_AUTH_SESSION_RECOVERY=0` | disable automatic session recovery hooks |
+| `CODEX_AUTH_AUTO_RESUME=0` | disable auto-resume after thinking-block recovery |
 | `CODEX_AUTH_FAST_SESSION=1` | enable fast-session defaults |
 | `CODEX_AUTH_FAST_SESSION_STRATEGY=always` | force fast mode on every prompt |
 | `CODEX_AUTH_FAST_SESSION_MAX_INPUT_ITEMS=24` | tune max retained input items in fast mode |
@@ -362,6 +371,10 @@ override any config with env vars (boolean values are truthy only for `"1"`):
 | `CODEX_AUTH_FETCH_TIMEOUT_MS=120000` | override fetch timeout |
 | `CODEX_AUTH_STREAM_STALL_TIMEOUT_MS=60000` | override SSE stall timeout |
 | `CODEX_KEYCHAIN=1` | opt in to OS-native keychain account storage |
+| `CODEX_AUTH_SYNC_CODEX_CLI=0` | disable hydrating accounts from Codex CLI `~/.codex` storage (on by default) |
+| `CODEX_CONSOLE_LOG=1` | also mirror plugin logs to the console |
+| `CODEX_COLLABORATION_MODE=plan` | collaboration mode hint for request shaping (`OPENCODE_COLLABORATION_MODE` is accepted as an alias) |
+| `OPENCODE_STATE_DIR=/path` | override OpenCode state dir used for the TUI quota cache file |
 
 ---
 
