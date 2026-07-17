@@ -95,7 +95,7 @@ Important note:
 ### Request-path smoke
 
 ```bash
-ENABLE_PLUGIN_REQUEST_LOGGING=1 opencode run "ping" --model=openai/gpt-5.5-medium
+ENABLE_PLUGIN_REQUEST_LOGGING=1 opencode run "ping" --model=openai/gpt-5.5 --variant=medium
 ```
 
 Verify:
@@ -138,7 +138,7 @@ If validation fails, sort the failure first:
 For request-path debugging:
 
 ```bash
-DEBUG_CODEX_PLUGIN=1 ENABLE_PLUGIN_REQUEST_LOGGING=1 CODEX_PLUGIN_LOG_BODIES=1 opencode run "ping" --model=openai/gpt-5.5-medium
+DEBUG_CODEX_PLUGIN=1 ENABLE_PLUGIN_REQUEST_LOGGING=1 CODEX_PLUGIN_LOG_BODIES=1 opencode run "ping" --model=openai/gpt-5.5 --variant=medium
 ```
 
 Use that only when you need payload-level detail because it can log sensitive request and response bodies.

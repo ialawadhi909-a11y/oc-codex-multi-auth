@@ -241,6 +241,18 @@ describe("runtime documentation parity", () => {
 		}
 	});
 
+	it("keeps installer help catalog counts aligned with shipped templates", () => {
+		const installerHelp = readRepoFile("scripts/install-oc-codex-multi-auth-core.js");
+		expect(installerHelp).toContain("12 base OAuth models");
+		expect(installerHelp).toContain("53 explicit selector entries");
+		expect(installerHelp).toContain("53 preset model entries");
+		expect(installerHelp).toContain("12 base OAuth model entries");
+		expect(installerHelp).toContain("53 explicit preset entries");
+		expect(installerHelp).not.toContain("9 base OAuth models");
+		expect(installerHelp).not.toContain("36 explicit selector entries");
+		expect(installerHelp).not.toContain("36 preset model entries");
+	});
+
 	it("keeps the documented tool layout aligned with the live registry", () => {
 		const toolFiles = readdirSync(path.resolve(testDir, "..", "lib/tools"))
 			.filter((name) => /^codex-[a-z-]+\.ts$/.test(name))
