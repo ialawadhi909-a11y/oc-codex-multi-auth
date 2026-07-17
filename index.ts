@@ -1944,9 +1944,9 @@ export const OpenAIOAuthPlugin: Plugin = async ({ client }: PluginInput) => {
 						const attempted = new Set<number>();
 						let restartAccountTraversalWithFallback = false;
 						let restartAccountTraversalAfterWorkspaceDeactivation = false;
+						const preferredAccountIds = getModelAccountPool(pluginConfig, model);
 
 			while (attempted.size < Math.max(1, accountCount)) {
-				const preferredAccountIds = getModelAccountPool(pluginConfig, model);
 				const selectionExplainability = accountManager.getSelectionExplainability(
 					modelFamily,
 					model,

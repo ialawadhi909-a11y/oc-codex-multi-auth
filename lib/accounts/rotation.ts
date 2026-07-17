@@ -63,6 +63,7 @@ export class AccountRotation {
 		const indices = this.state.accounts
 			.filter(
 				(account) =>
+					account &&
 					account.accountId !== undefined &&
 					preferredIds.has(account.accountId) &&
 					this.isSelectable(account, family, model),
