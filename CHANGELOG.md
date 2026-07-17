@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.9.0] - 2026-07-17
+
+### Added
+- **Model-specific account pools**: a new `modelAccountPools` config field maps an effective model ID to a preferred set of accounts, so a model can be routed through the accounts entitled to it (e.g. pin `gpt-5.6-sol` to the accounts inside the Sol preview) instead of burning rotation attempts on accounts that will reject it. All three rotation strategies (`sticky`, `round-robin`, `hybrid`) restrict selection to healthy, selectable accounts in the preferred pool while one is available; existing quota, cooldown, and token-health rules still apply within the pool. If every preferred account is unavailable — disabled, unknown in this project, cooling down, or rate-limited — selection falls back transparently to the healthy general pool rather than failing the request. Model keys match case-insensitively against the effective model after request-model normalization; unmapped models and empty lists use the general pool directly. Pool references are stable account IDs, not indexes, so adding, removing, or reordering accounts never silently changes a model's routing. Contributed by @lubshad. (#200)
+- **`codex-pool` tool** (the 24th `codex-*` tool): inspects and mutates those mappings with ordinary 1-based account numbers (`status`, `set`, `add`, `remove`, `clear`, plus `dryRun=true` previews) while resolving and persisting only stable IDs. Config writes are atomic and serialized — an in-process promise queue plus a `proper-lockfile` cross-process file lock (new runtime dependency) — preserve every unrelated raw config key, and refuse to replace malformed JSON or an invalid existing pool rather than clobbering it. JSON output redacts stable account IDs unless `includeSensitive=true`. Because the plugin config is global while account storage is per-project by default, references that don't resolve in the current project are reported but never automatically pruned — they may be valid elsewhere. Mutations require an OpenCode restart to take effect. (#200)
+- Routing diagnostics (`codex-status`, `codex-dashboard`, `codex-metrics` text and TUI views) now report `accountPoolMode` — `general`, `preferred`, or `general-fallback` — and `configuredAccountPoolSize`, so a fallback out of a configured pool is visible instead of silent. (#200)
+
 ## [6.8.2] - 2026-07-16
 
 ### Fixed
