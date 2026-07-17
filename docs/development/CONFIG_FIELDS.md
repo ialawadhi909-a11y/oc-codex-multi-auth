@@ -191,6 +191,16 @@ is disabled, cooling down, rate-limited, or locally depleted, selection falls
 back to the general account pool. Empty lists and unmapped models use the
 general pool directly.
 
+`codex-pool` is the supported mutation surface. It accepts 1-based account
+numbers for `set`, `add`, and `remove`, but resolves and atomically persists
+only stable account IDs. `clear` removes a model mapping, and every mutation
+supports a dry-run preview. Writes preserve unrelated raw config fields and
+refuse to replace malformed JSON or an invalid existing pool.
+
+The config file is global while account storage is per-project by default.
+Consequently, status may report unresolved references for the current project;
+the tool does not automatically prune them because they may be valid elsewhere.
+
 ## Verification Notes
 
 Use these commands when validating config fields:

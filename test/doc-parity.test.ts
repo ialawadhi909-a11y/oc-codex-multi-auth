@@ -253,7 +253,7 @@ describe("runtime documentation parity", () => {
 		).sort();
 
 		expect(registeredTools).toEqual(toolFiles);
-		expect(registeredTools).toHaveLength(23);
+		expect(registeredTools).toHaveLength(24);
 
 		const docsExpectations: Array<[string, string[]]> = [
 			[
@@ -273,7 +273,7 @@ describe("runtime documentation parity", () => {
 			[
 				"lib/tools/AGENTS.md",
 				[
-					"23 `codex-*` tools",
+					"24 `codex-*` tools",
 					"codex-keychain.ts",
 				],
 			],

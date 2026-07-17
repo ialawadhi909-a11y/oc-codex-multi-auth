@@ -15,6 +15,7 @@ vi.mock("@opencode-ai/plugin/tool", () => {
 		number: () => makeSchema(),
 		boolean: () => makeSchema(),
 		string: () => makeSchema(),
+		array: () => makeSchema(),
 	};
 
 	return { tool };
@@ -533,6 +534,14 @@ type PluginType = {
 		"codex-next": OptionalToolExecute<{ format?: string }>;
 		"codex-label": ToolExecute<{ index?: number; label: string }>;
 		"codex-tag": ToolExecute<{ index?: number; tags: string }>;
+		"codex-pool": OptionalToolExecute<{
+			action?: string;
+			model?: string;
+			accounts?: number[];
+			dryRun?: boolean;
+			format?: string;
+			includeSensitive?: boolean;
+		}>;
 		"codex-note": ToolExecute<{ index?: number; note: string }>;
 		"codex-dashboard": OptionalToolExecute<{ format?: string; includeSensitive?: boolean }>;
 		"codex-health": OptionalToolExecute<{ format?: string; includeSensitive?: boolean }>;
@@ -595,6 +604,7 @@ describe("OpenAIOAuthPlugin", () => {
 			expect(plugin.tool["codex-next"]).toBeDefined();
 			expect(plugin.tool["codex-label"]).toBeDefined();
 			expect(plugin.tool["codex-tag"]).toBeDefined();
+			expect(plugin.tool["codex-pool"]).toBeDefined();
 			expect(plugin.tool["codex-note"]).toBeDefined();
 			expect(plugin.tool["codex-dashboard"]).toBeDefined();
 			expect(plugin.tool["codex-health"]).toBeDefined();

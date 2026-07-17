@@ -180,6 +180,7 @@ If browser launch is blocked, use the alternate login paths in [docs/getting-sta
 | `codex-limits` | What quota or rate-limit state is visible now? |
 | `codex-reset` | Do I have a banked rate-limit reset credit, and how do I redeem it? |
 | `codex-dashboard` | Can I manage accounts from one interactive surface? |
+| `codex-pool` | Which accounts are preferred for each model, and how do I change them? |
 
 Most of these also run as a **direct CLI** with no agent/model involvement (no token cost) — e.g. `oc-codex-multi-auth warm`, `oc-codex-multi-auth status`, or `npx -y oc-codex-multi-auth@latest warm`. Use `oc-codex-multi-auth warm` to open every enabled account's usage window at the start of a session and stagger the rolling quota cooldowns. Add `--json` for scriptable output.
 
@@ -268,11 +269,22 @@ Save this configuration in `~/.opencode/openai-codex-auth-config.json`, then
 restart OpenCode. Model matching is case-insensitive and uses the effective
 model after request model normalization.
 
-To find stable account IDs, run:
+Use `codex-pool` to manage these mappings with ordinary 1-based account
+numbers. The tool resolves those numbers and writes stable IDs to disk:
 
 ```text
-codex-list format="json" includeSensitive=true
+codex-pool
+codex-pool action="set" model="gpt-5.6-sol" accounts=[7,8]
+codex-pool action="add" model="gpt-5.6-sol" accounts=[9]
+codex-pool action="remove" model="gpt-5.6-sol" accounts=[7]
+codex-pool action="clear" model="gpt-5.6-sol"
 ```
+
+Add `dryRun=true` to preview a mutation. Use `format="json"` for structured
+output; stable IDs remain redacted unless `includeSensitive=true` is also set.
+Restart OpenCode after an applied mutation. The plugin configuration is global
+while account storage is per-project by default, so a reference unresolved in
+the current project is reported but never automatically deleted.
 
 Routing behavior:
 

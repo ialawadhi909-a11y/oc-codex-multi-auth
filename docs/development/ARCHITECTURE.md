@@ -184,7 +184,7 @@ Tool groups:
 | --- | --- |
 | Setup and help | `codex-setup`, `codex-help`, `codex-next` |
 | Daily account use | `codex-list`, `codex-switch`, `codex-status`, `codex-limits`, `codex-reset`, `codex-dashboard` |
-| Account metadata | `codex-label`, `codex-tag`, `codex-note`, `codex-remove`, `codex-refresh` |
+| Account metadata and routing | `codex-label`, `codex-tag`, `codex-note`, `codex-pool`, `codex-remove`, `codex-refresh` |
 | Diagnostics | `codex-health`, `codex-metrics`, `codex-doctor`, `codex-diag`, `codex-diff` |
 | Backup/secrets | `codex-export`, `codex-import`, `codex-keychain` |
 
